@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>Distributed atomic-coordination primitives for .NET: IReplayGuard (single-use claim / nonce protection) and IRequestThrottle (atomic fixed-window rate limiting) over a pluggable backend, with a built-in in-memory default. Standalone and dependency-light (Microsoft.Extensions.DependencyInjection.Abstractions only) — add Cirreum.Coordination.Redis for distributed, multi-instance coordination. Useful for replay/nonce protection, idempotency keys, message de-duplication, and rate limiting.</Description>
+		<PackageTags>cirreum;coordination;replay;nonce;throttle;ratelimit;idempotency;distributed</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- The only dependency: the DI abstractions for the AddCoordination surface + ServiceDescriptor
+		     TryAdd/Replace. No Cirreum dependencies and no FrameworkReference — usable standalone in any .NET app. -->
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+	</ItemGroup>
+
+	<ItemGroup Label="InternalsVisibleTo" Condition="'$(IsLocalBuild)' == 'true'">
+		<InternalsVisibleTo Include="Cirreum.Coordination.Tests" />
+	</ItemGroup>
+
+</Project>
