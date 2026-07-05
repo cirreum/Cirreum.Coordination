@@ -6,14 +6,15 @@
 [![License](https://img.shields.io/badge/license-MIT-F2F2F2?style=flat-square&labelColor=1F1F1F)](https://github.com/cirreum/Cirreum.Coordination/blob/main/LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-003D8F?style=flat-square&labelColor=1F1F1F)](https://dotnet.microsoft.com/)
 
-**Distributed atomic-coordination primitives for .NET — single-use claims and fixed-window throttling over a pluggable backend**
+**Atomic and ephemeral coordination primitives for .NET — single-use claims, fixed-window throttling, and pub/sub signaling over a pluggable backend**
 
 ## Overview
 
-**Cirreum.Coordination** provides two small, focused atomic-coordination primitives with a built-in in-memory default and a pluggable backend:
+**Cirreum.Coordination** provides small, focused coordination primitives with a built-in in-memory default and a pluggable backend — the same charter classic coordination services (ZooKeeper, etcd, Consul) bundle as locks, leases, and watch/notify:
 
 - **`IReplayGuard`** — a single-use claim (atomic set-if-absent): the first caller to claim a token wins; replays within the window are rejected. For nonce / replay protection, idempotency keys, and message de-duplication.
 - **`IRequestThrottle`** — an atomic fixed-window counter: records a hit against a key and reports whether the caller is still within the limit. For rate limiting.
+- **`ISignalBroadcaster`** — an ephemeral publish/subscribe primitive: notifies whichever instances are currently listening on a channel. At-most-once, unbuffered — a live nudge, not a durable message (for that, use `Cirreum.Messaging.Distributed`).
 
 It depends only on `Microsoft.Extensions.DependencyInjection.Abstractions`, so it works standalone in any .NET application. Add **Cirreum.Coordination.Redis** for distributed, multi-instance coordination.
 
@@ -48,6 +49,18 @@ public sealed class RateLimiter(IRequestThrottle throttle) {
         var outcome = await throttle.RecordAsync(clientId, TimeSpan.FromMinutes(1), limit: 100);
         return outcome.Allowed;   // outcome.RetryAfter hints when throttled
     }
+}
+
+public sealed class CacheInvalidationSignal(ISignalBroadcaster broadcaster) {
+    public ValueTask NotifyAsync(string key) =>
+        broadcaster.PublishAsync("cache-invalidated", Encoding.UTF8.GetBytes(key));
+
+    public ValueTask ListenAsync() =>
+        broadcaster.SubscribeAsync("cache-invalidated", (payload, _) => {
+            var key = Encoding.UTF8.GetString(payload.Span);
+            // evict key locally
+            return ValueTask.CompletedTask;
+        });
 }
 ```
 

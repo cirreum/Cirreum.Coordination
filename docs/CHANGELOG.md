@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ISignalBroadcaster` — a third coordination primitive alongside `IReplayGuard`/`IRequestThrottle`: an ephemeral publish/subscribe signal for notifying whichever instances are currently listening on a channel. At-most-once, unbuffered — a live nudge, not a durable message (use `Cirreum.Messaging.Distributed` for that). Does not participate in `CoordinationPostureValidator`'s fail-closed posture check — silently falling back to in-process-only delivery is a safe degradation, not a security regression.
+- `InMemorySignalBroadcaster` — the built-in single-instance default: a genuine in-process pub/sub bus, not a no-op. `UseInMemory()` now wires all three primitives together.
+
+### Fixed
+
+- `CoordinationPostureValidator`'s "no backend chosen" error text referenced ApiKey's `SelfContained` profile, which was dropped in the 2026-06-08 redesign and never actually consumed `IRequestThrottle`. Removed the stale reference.
+
 ## [1.0.0] - 2026-07-03
 
 ### Added

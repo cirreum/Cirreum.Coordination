@@ -32,9 +32,9 @@ public static class CoordinationPostureValidator {
 
 	/// <summary>The shared "no backend chosen" error, used by both the validator and the sentinels.</summary>
 	internal static InvalidOperationException NoBackendError() =>
-		new("A coordination-requiring posture is active (e.g. SignedRequest strict-nonce, or ApiKey " +
-			"SelfContained), but no coordination backend was chosen. Call " +
-			"services.AddCoordination(c => c.UseInMemory()) for single-node / development, or " +
-			"c => c.UseRedis() (reference Cirreum.Coordination.Redis) for distributed, multi-instance deployments.");
+		new("A coordination-requiring posture is active (e.g. SignedRequest strict-nonce), but no " +
+			"coordination backend was chosen. Call services.AddCoordination(c => c.UseInMemory()) for " +
+			"single-node / development, or c => c.UseRedis() (reference Cirreum.Coordination.Redis) for " +
+			"distributed, multi-instance deployments.");
 
 }

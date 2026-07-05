@@ -4,10 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 /// <summary>
-/// Configures the atomic-coordination backend (<see cref="IReplayGuard"/> + <see cref="IRequestThrottle"/>).
-/// The backend is registered once (via <c>AddCoordination</c>) and shared; consumers resolve whichever
-/// interface they need. Distributed adapters (e.g. <c>Cirreum.Coordination.Redis</c>) contribute their own
-/// <c>UseXxx()</c> extension methods on this type, keeping consumers blind to the backing store.
+/// Configures the coordination backend (<see cref="IReplayGuard"/> + <see cref="IRequestThrottle"/> +
+/// <see cref="ISignalBroadcaster"/>). The backend is registered once (via <c>AddCoordination</c>) and shared;
+/// consumers resolve whichever interface they need. Distributed adapters (e.g. <c>Cirreum.Coordination.Redis</c>)
+/// contribute their own <c>UseXxx()</c> extension methods on this type, keeping consumers blind to the backing
+/// store.
 /// </summary>
 public sealed class CoordinationBuilder {
 
@@ -23,14 +24,15 @@ public sealed class CoordinationBuilder {
 
 	/// <summary>
 	/// Uses the built-in single-instance in-memory backend (<see cref="InMemoryReplayGuard"/> +
-	/// <see cref="InMemoryRequestThrottle"/>). Correct for single-instance and development deployments; it
-	/// does NOT coordinate across instances. Replaces any previously-registered coordination backend so the
-	/// last <c>UseXxx()</c> call wins.
+	/// <see cref="InMemoryRequestThrottle"/> + <see cref="InMemorySignalBroadcaster"/>). Correct for
+	/// single-instance and development deployments; it does NOT coordinate across instances. Replaces any
+	/// previously-registered coordination backend so the last <c>UseXxx()</c> call wins.
 	/// </summary>
 	/// <returns>The builder for chaining.</returns>
 	public CoordinationBuilder UseInMemory() {
 		this.Services.Replace(ServiceDescriptor.Singleton<IReplayGuard, InMemoryReplayGuard>());
 		this.Services.Replace(ServiceDescriptor.Singleton<IRequestThrottle, InMemoryRequestThrottle>());
+		this.Services.Replace(ServiceDescriptor.Singleton<ISignalBroadcaster, InMemorySignalBroadcaster>());
 		return this;
 	}
 

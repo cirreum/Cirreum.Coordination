@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 public sealed class CoordinationRegistrationTests {
 
 	[Fact]
-	public void Choosing_in_memory_registers_both_primitives_as_singletons() {
+	public void Choosing_in_memory_registers_all_three_primitives_as_singletons() {
 		var services = new ServiceCollection();
 
 		services.AddCoordination(c => c.UseInMemory());
@@ -14,8 +14,10 @@ public sealed class CoordinationRegistrationTests {
 		using var provider = services.BuildServiceProvider();
 		provider.GetRequiredService<IReplayGuard>().Should().BeOfType<InMemoryReplayGuard>();
 		provider.GetRequiredService<IRequestThrottle>().Should().BeOfType<InMemoryRequestThrottle>();
+		provider.GetRequiredService<ISignalBroadcaster>().Should().BeOfType<InMemorySignalBroadcaster>();
 		services.Single(d => d.ServiceType == typeof(IReplayGuard)).Lifetime.Should().Be(ServiceLifetime.Singleton);
 		services.Single(d => d.ServiceType == typeof(IRequestThrottle)).Lifetime.Should().Be(ServiceLifetime.Singleton);
+		services.Single(d => d.ServiceType == typeof(ISignalBroadcaster)).Lifetime.Should().Be(ServiceLifetime.Singleton);
 	}
 
 	[Fact]
@@ -27,6 +29,16 @@ public sealed class CoordinationRegistrationTests {
 		using var provider = services.BuildServiceProvider();
 		provider.GetRequiredService<IReplayGuard>().Should().BeOfType<RequiresBackendReplayGuard>();
 		provider.GetRequiredService<IRequestThrottle>().Should().BeOfType<RequiresBackendRequestThrottle>();
+	}
+
+	[Fact]
+	public void Pulling_coordination_gives_ISignalBroadcaster_the_safe_default_directly_not_a_sentinel() {
+		var services = new ServiceCollection();
+
+		services.AddCoordination();
+
+		using var provider = services.BuildServiceProvider();
+		provider.GetRequiredService<ISignalBroadcaster>().Should().BeOfType<InMemorySignalBroadcaster>();
 	}
 
 	[Fact]
@@ -126,6 +138,22 @@ public sealed class CoordinationRegistrationTests {
 		var act = () => CoordinationPostureValidator.Validate(services);
 
 		act.Should().NotThrow();
+	}
+
+	[Fact]
+	public void Validate_ignores_ISignalBroadcaster_entirely() {
+		// ISignalBroadcaster never joins the fail-closed check: it resolves to its safe in-memory default
+		// straight off the pull, with no distributed backend ever chosen, while Validate() still only reacts
+		// to whether IReplayGuard/IRequestThrottle were chosen — proving ISignalBroadcaster's own posture is
+		// never what's being validated.
+		var services = new ServiceCollection();
+		services.AddCoordination(); // pull only — no backend chosen for anything
+
+		using var provider = services.BuildServiceProvider();
+		provider.GetRequiredService<ISignalBroadcaster>().Should().BeOfType<InMemorySignalBroadcaster>();
+
+		var act = () => CoordinationPostureValidator.Validate(services);
+		act.Should().Throw<InvalidOperationException>("only because IReplayGuard/IRequestThrottle are still sentinels — never because of ISignalBroadcaster");
 	}
 
 	[Fact]
