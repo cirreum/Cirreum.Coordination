@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-05
+
 ### Added
 
 - `ISignalBroadcaster` — a third coordination primitive alongside `IReplayGuard`/`IRequestThrottle`: an ephemeral publish/subscribe signal for notifying whichever instances are currently listening on a channel. At-most-once, unbuffered — a live nudge, not a durable message (use `Cirreum.Messaging.Distributed` for that). Does not participate in `CoordinationPostureValidator`'s fail-closed posture check — silently falling back to in-process-only delivery is a safe degradation, not a security regression.
