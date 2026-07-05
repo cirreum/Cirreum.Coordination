@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `CoordinationScope` — establishes state scoping as a first-class concept instead of a stringly-typed
+  convention. A distributed backend is one flat keyspace: without a scope, two applications (or a Test and
+  a Production deployment of the same application) sharing an instance share replay claims, throttle
+  windows, and signal channels. The scope namespaces all of it. The value is opaque to this package (it
+  never computes one); `CoordinationScope.For(applicationName, environmentName)` composes the canonical
+  `{app}:{env}` form — one glob-friendly segment per axis, so a backend-side access rule can pin an
+  identity to one application, one environment, or both.
+- `CoordinationBuilder.WithScope(scope)` / `WithScope(applicationName, environmentName)` — registers the
+  scope with Replace semantics: an explicit call always beats a composition-provided `TryAdd` default, and
+  the last call is authoritative. Distributed adapters resolve the scope from DI and fold it into every key
+  and channel they touch; the in-memory backend ignores it — a process is already its own scope.
+
 ## [1.1.0] - 2026-07-05
 
 ### Added

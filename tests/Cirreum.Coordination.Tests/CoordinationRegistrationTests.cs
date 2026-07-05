@@ -2,6 +2,7 @@ namespace Cirreum.Coordination.Tests;
 
 using Cirreum.Coordination;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 public sealed class CoordinationRegistrationTests {
 
@@ -154,6 +155,73 @@ public sealed class CoordinationRegistrationTests {
 
 		var act = () => CoordinationPostureValidator.Validate(services);
 		act.Should().Throw<InvalidOperationException>("only because IReplayGuard/IRequestThrottle are still sentinels — never because of ISignalBroadcaster");
+	}
+
+	[Fact]
+	public void WithScope_registers_the_scope_as_a_singleton() {
+		var services = new ServiceCollection();
+
+		services.AddCoordination(c => c.UseInMemory().WithScope("MyApp:Production"));
+
+		using var provider = services.BuildServiceProvider();
+		provider.GetRequiredService<CoordinationScope>().Value.Should().Be("MyApp:Production");
+		services.Single(d => d.ServiceType == typeof(CoordinationScope)).Lifetime.Should().Be(ServiceLifetime.Singleton);
+	}
+
+	[Fact]
+	public void WithScope_application_environment_overload_composes_the_canonical_scope() {
+		var services = new ServiceCollection();
+
+		services.AddCoordination(c => c.UseInMemory().WithScope("MyApp", "Production"));
+
+		using var provider = services.BuildServiceProvider();
+		provider.GetRequiredService<CoordinationScope>().Value.Should().Be("MyApp:Production");
+	}
+
+	[Fact]
+	public void WithScope_replaces_a_prior_registration_so_an_explicit_call_wins() {
+		var services = new ServiceCollection();
+		// A composition surface offered a default first (TryAdd semantics, e.g. from IDomainEnvironment).
+		services.TryAddSingleton(new CoordinationScope("Default:Composed"));
+
+		services.AddCoordination(c => c.UseInMemory().WithScope("Explicit:Choice"));
+
+		using var provider = services.BuildServiceProvider();
+		provider.GetRequiredService<CoordinationScope>().Value.Should().Be("Explicit:Choice");
+		services.Count(d => d.ServiceType == typeof(CoordinationScope)).Should().Be(1);
+	}
+
+	[Fact]
+	public void WithScope_last_call_is_authoritative() {
+		var services = new ServiceCollection();
+
+		services.AddCoordination(c => c.UseInMemory().WithScope("First:Scope").WithScope("Second:Scope"));
+
+		using var provider = services.BuildServiceProvider();
+		provider.GetRequiredService<CoordinationScope>().Value.Should().Be("Second:Scope");
+		services.Count(d => d.ServiceType == typeof(CoordinationScope)).Should().Be(1);
+	}
+
+	[Fact]
+	public void No_scope_is_registered_unless_asked_for() {
+		var services = new ServiceCollection();
+
+		services.AddCoordination(c => c.UseInMemory());
+
+		using var provider = services.BuildServiceProvider();
+		provider.GetService<CoordinationScope>().Should().BeNull();
+	}
+
+	[Theory]
+	[InlineData(null)]
+	[InlineData("")]
+	[InlineData("   ")]
+	public void WithScope_rejects_a_null_or_blank_scope(string? scope) {
+		var services = new ServiceCollection();
+
+		var act = () => services.AddCoordination(c => c.UseInMemory().WithScope(scope!));
+
+		act.Should().Throw<ArgumentException>();
 	}
 
 	[Fact]

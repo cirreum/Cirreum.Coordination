@@ -79,6 +79,25 @@ CoordinationPostureValidator.Validate(services);  // throws if coordination was 
 order-independent — the chosen backend always wins, regardless of call order. Until a backend is chosen, the
 primitives are backed by a fail-closed sentinel that throws rather than silently allow.
 
+### Scoping (sharing one backend across applications and environments)
+
+A distributed backend is one flat keyspace: without a scope, two applications (or a Test and a Production
+deployment of the same application) sharing an instance share replay claims, throttle windows, and signal
+channels — colliding throttle keys count against each other, and one deployment's signals are delivered to
+the other. `CoordinationScope` namespaces all of it:
+
+```csharp
+builder.Services.AddCoordination(c => c
+    .UseRedis()
+    .WithScope("MyApp", "Production"));   // canonical {app}:{env}, or WithScope("any-opaque-value")
+```
+
+Distributed adapters fold the scope into every key and channel they touch (the in-memory backend ignores
+it — a process is already its own scope). The scope value is opaque to this package; composition surfaces
+that know the application's identity (e.g. Cirreum's authentication composition) provide the canonical
+`{ApplicationName}:{EnvironmentName}` default automatically when none is registered, and an explicit
+`WithScope(...)` always wins.
+
 ## Contribution Guidelines
 
 1. **Be conservative with new abstractions**  
