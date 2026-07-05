@@ -19,10 +19,12 @@ forcing function (a related change, a consumer upgrade, a coordinated multi-repo
 
 ### TimeProvider seam for testable in-memory expiry
 
-- **SemVer:** Minor
+- **SemVer:** Major
 - **Trigger:** A consumer needs deterministic, fake-clock testing of TTL / window expiry, or the real-delay
   time-based tests become a maintenance burden.
 - **Noted:** 2026-06-07
 - The in-memory backend reads wall-clock `Environment.TickCount64` directly, so its expiry tests use real
   `Task.Delay` with generous margins. Injecting a `TimeProvider` (defaulting to `TimeProvider.System`) would
-  make expiry deterministic to test and let consumers virtualize time. Additive; default behavior unchanged.
+  make expiry deterministic to test and let consumers virtualize time. Additive; default behavior unchanged
+  when implemented — the `SemVer` here reflects the surfacing threshold (deferred indefinitely, not expected
+  soon), not the eventual change's actual scope.
