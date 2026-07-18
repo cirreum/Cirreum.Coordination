@@ -8,7 +8,7 @@
 	<ItemGroup>
 		<!-- The only dependency: the DI abstractions for the AddCoordination surface + ServiceDescriptor
 		     TryAdd/Replace. No Cirreum dependencies and no FrameworkReference — usable standalone in any .NET app. -->
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
 	</ItemGroup>
 
 	<ItemGroup Label="InternalsVisibleTo" Condition="'$(IsLocalBuild)' == 'true'">
