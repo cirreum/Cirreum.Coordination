@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-04
+
+### Added
+
+- **`ICoordinationPostureCheck`** — a backend-contributed boot-time check run by
+  `CoordinationPostureValidator.Validate` after application composition. A chosen backend can
+  now verify the registrations it depends on are actually present (e.g. the Redis backend's
+  `IConnectionMultiplexer`), turning a dependency that would otherwise fail on first use into
+  a clear startup error. Checks are registered as singleton instances and are pure descriptor
+  inspection — the validator runs before a service provider exists.
+
 ## [1.2.1] - 2026-07-18
 
 ### Updated

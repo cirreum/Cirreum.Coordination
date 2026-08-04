@@ -14,8 +14,10 @@ public static class CoordinationPostureValidator {
 
 	/// <summary>
 	/// Throws <see cref="InvalidOperationException"/> if either coordination primitive is still backed by its
-	/// fail-closed sentinel (coordination was required but no backend was chosen). Order-independent: call it
-	/// once after the composition callback has run, so it sees every <c>AddCoordination</c> contribution.
+	/// fail-closed sentinel (coordination was required but no backend was chosen), then runs every
+	/// backend-contributed <see cref="ICoordinationPostureCheck"/> and throws on the first failure.
+	/// Order-independent: call it once after the composition callback has run, so it sees every
+	/// <c>AddCoordination</c> contribution.
 	/// </summary>
 	/// <param name="services">The fully-composed service collection.</param>
 	public static void Validate(IServiceCollection services) {
@@ -27,6 +29,19 @@ public static class CoordinationPostureValidator {
 
 		if (unconfigured) {
 			throw NoBackendError();
+		}
+
+		// Backend-contributed checks. No provider exists yet, so only instance registrations
+		// are discoverable — the ICoordinationPostureCheck contract requires exactly that.
+		foreach (var descriptor in services) {
+			if (descriptor.ServiceType == typeof(ICoordinationPostureCheck)
+				&& !descriptor.IsKeyedService
+				&& descriptor.ImplementationInstance is ICoordinationPostureCheck check) {
+				var error = check.Check(services);
+				if (error is not null) {
+					throw new InvalidOperationException(error);
+				}
+			}
 		}
 	}
 
